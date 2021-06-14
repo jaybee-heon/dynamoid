@@ -261,13 +261,22 @@ module Dynamoid
 
         associations[name] = options.merge(type: type)
 
+        association_key = case type
+                          when :has_one, :belongs_to
+                            "#{name}_id".to_sym
+                          when :has_many, :has_and_belongs_to_many
+                            "#{name}_ids".to_sym
+                          else
+                            raise ArgumentError, "Unexceptable type: #{type}"
+                          end
+
         define_method(name) do
-          @associations[:"#{name}_ids"] ||= Dynamoid::Associations.const_get(type.to_s.camelcase).new(self, name, options)
+          @associations[association_key] ||= Dynamoid::Associations.const_get(type.to_s.camelcase).new(self, name, options)
         end
 
         define_method("#{name}=".to_sym) do |objects|
-          @associations[:"#{name}_ids"] ||= Dynamoid::Associations.const_get(type.to_s.camelcase).new(self, name, options)
-          @associations[:"#{name}_ids"].setter(objects)
+          @associations[association_key] ||= Dynamoid::Associations.const_get(type.to_s.camelcase).new(self, name, options)
+          @associations[association_key].setter(objects)
         end
       end
     end
